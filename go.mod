@@ -4,7 +4,10 @@ go 1.25.2
 
 // replace github.com/ProtonMail/go-proton-api v0.4.0 => /Users/maisie/github.com/ProtonMail/go-proton-api
 
-require github.com/ProtonMail/go-proton-api v0.4.0-replaced
+require (
+	github.com/ProtonMail/go-proton-api v0.4.0-replaced
+	golang.org/x/net v0.38.0
+)
 
 replace github.com/ProtonMail/go-proton-api v0.4.0-replaced => ../../ProtonMail/go-proton-api
 
@@ -35,7 +38,6 @@ require (
 	gitlab.com/c0b/go-ordered-json v0.0.0-20201030195603-febf46534d5a // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
-	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect

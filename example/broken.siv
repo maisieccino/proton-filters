@@ -1,0 +1,6 @@
+require ["fileinto", "imap4flags"];
+# Put support mail in a separate organized folder
+if address :localpart "to" "support"
+{
+    fleinto "Support";
+}
