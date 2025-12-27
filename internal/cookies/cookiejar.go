@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
 	"sync"
+	"time"
 )
 
 type cookieMap map[string][]*http.Cookie
@@ -57,7 +59,17 @@ func cookieKey(url *url.URL) string {
 func (j *Jar) SetCookies(url *url.URL, cookies []*http.Cookie) {
 	j.Lock()
 	defer j.Unlock()
-	j.jar.SetCookies(url, cookies)
+	withExpiry := make([]*http.Cookie, len(cookies))
+	for i, c := range cookies {
+		if c.MaxAge != 0 {
+			c.Expires = time.Now().Add(time.Duration(c.MaxAge) * time.Second)
+		} else if c.Expires.IsZero() {
+			// Maximum val
+			c.Expires = time.UnixMilli(math.MaxInt64)
+		}
+		withExpiry[i] = c
+	}
+	j.jar.SetCookies(url, withExpiry)
 
 	j.cookiesByHost[cookieKey(url)] = cookies
 }

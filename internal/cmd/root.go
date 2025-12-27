@@ -6,20 +6,17 @@ import (
 	"os"
 
 	"github.com/ProtonMail/go-proton-api"
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/maisieccino/proton-filters/internal/client"
+	"github.com/maisieccino/proton-filters/internal/types"
 	"github.com/maisieccino/proton-filters/internal/views"
 	"github.com/spf13/cobra"
 )
 
 type appModel struct {
-	loading bool
-	spinner spinner.Model
 	client  *proton.Client
-	err     error
-
-	view_FilterList tea.Model
+	screens map[string]tea.Model
+	current string
 }
 
 func newApp() appModel {
@@ -29,15 +26,24 @@ func newApp() appModel {
 		fmt.Println(err)
 		panic(err)
 	}
-	return appModel{
-		loading:         true,
-		client:          c,
-		spinner:         spinner.New(),
-		view_FilterList: &views.FilterList{},
+	m := appModel{
+		client:  c,
+		screens: make(map[string]tea.Model),
 	}
+	v, name := views.NewFilterList()
+	m.screens[name] = v
+	m.current = name
+	return m
 }
 
 type FiltersMsg []proton.Filter
+
+func (m appModel) currentScreen() tea.Model {
+	if cur, ok := m.screens[m.current]; ok {
+		return cur
+	}
+	return &views.DefaultScreen{}
+}
 
 func (m appModel) Init() tea.Cmd {
 	return tea.Batch(func() tea.Msg {
@@ -45,46 +51,24 @@ func (m appModel) Init() tea.Cmd {
 		if err != nil {
 			return err
 		}
-		return FiltersMsg(filters)
-	},
-		m.spinner.Tick,
-	)
+		return types.FiltersMsg(filters)
+	})
 }
 
 func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
+	// var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
 			return m, tea.Quit
-		case "a":
-			m.loading = false
-			return m, nil
 		}
-	case error:
-		m.err = msg
-		return m, nil
-	case FiltersMsg:
-		m.loading = false
-		m.view_FilterList, cmd = m.view_FilterList.Update(msg)
-		return m, cmd
 	}
-	m.spinner, cmd = m.spinner.Update(msg)
-	return m, cmd
+	return m.currentScreen().Update(msg)
 }
 
 func (m appModel) View() string {
-	if m.loading {
-		return m.spinner.View()
-	}
-	if m.err != nil {
-		return "Error fetching filters: " + m.err.Error()
-	}
-	if m.view_FilterList != nil {
-		return m.view_FilterList.View()
-	}
-	return ""
+	return m.currentScreen().View()
 }
 
 func Root(cmd *cobra.Command, args []string) {
