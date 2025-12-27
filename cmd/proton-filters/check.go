@@ -12,6 +12,9 @@ var checkCmd = cobra.Command{
 	Example: "proton-filters check test.siv",
 	RunE:    cmd.Check,
 	Args:    cobra.ExactArgs(1),
+	ValidArgs: []cobra.Completion{
+		cobra.CompletionWithDesc("filename", "Path to the sieve file to check"),
+	},
 }
 
 func init() {

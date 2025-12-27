@@ -1,3 +1,5 @@
+// cookies is used to build a persistent cookie jar for Proton API
+// authentication.
 package cookies
 
 import (
@@ -12,6 +14,10 @@ import (
 
 type cookieMap map[string][]*http.Cookie
 
+// Jar implements http.CookieJar by wrapping an existing cookie jar with
+// functions for saving to disk and loading from disk on startup.
+// UID and Ref are used for the Proton API to be able to re-authenticate without
+// a password.
 type Jar struct {
 	jar           http.CookieJar
 	cookiesByHost cookieMap
@@ -68,6 +74,7 @@ type ExportData struct {
 	Ref     string
 }
 
+// Persist saves cookie jar to disk, as a JSON file.
 func (j *Jar) Persist() error {
 	data := ExportData{
 		Cookies: j.cookiesByHost,

@@ -43,20 +43,28 @@ func NewClient(ctx context.Context) (*proton.Client, error) {
 
 	if jar.HasToken() {
 		c, a, err = manager.NewClientWithRefresh(ctx, jar.UID, jar.Ref)
-		if err != nil {
-			fmt.Printf("error: %s\n", err.Error())
-			return nil, err
+		if err == nil && c != nil {
+			jar.UID = a.UID
+			jar.Ref = a.RefreshToken
+
+			err = jar.Persist()
+			if err != nil {
+				fmt.Printf("error: %s\n", err.Error())
+				return nil, err
+			}
+
+			return c, nil
 		}
-		println("Reloaded auth from disk")
-	} else {
-		c, a, err = manager.NewClientWithLogin(ctx,
-			os.Getenv("PROTON_USER"),
-			[]byte(os.Getenv("PROTON_PASS")),
-		)
-		if err != nil {
-			fmt.Printf("error: %s\n", err.Error())
-			return nil, err
-		}
+		fmt.Printf("error: %s\n", err.Error())
+	}
+	fmt.Println("no existing token found")
+	c, a, err = manager.NewClientWithLogin(ctx,
+		os.Getenv("PROTON_USER"),
+		[]byte(os.Getenv("PROTON_PASS")),
+	)
+	if err != nil {
+		fmt.Printf("error: %s\n", err.Error())
+		return nil, err
 	}
 
 	jar.UID = a.UID
