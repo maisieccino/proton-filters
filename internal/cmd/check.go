@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/ProtonMail/go-proton-api"
-	"github.com/alecthomas/chroma/v2/quick"
 	"github.com/maisieccino/proton-filters/internal/client"
 	"github.com/spf13/cobra"
 )
@@ -40,7 +39,6 @@ func Check(cmd *cobra.Command, args []string) error {
 	for _, item := range res {
 		fmt.Printf("%s Line %d: %s\n", sev(item), item.From.Line, item.Message)
 	}
-	quick.Highlight(os.Stdout, string(f), "sieve", "terminal256", "monokai")
 	return nil
 }
 

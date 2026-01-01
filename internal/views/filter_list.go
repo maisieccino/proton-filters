@@ -2,7 +2,6 @@ package views
 
 import (
 	"bytes"
-	"os"
 	"slices"
 
 	"github.com/ProtonMail/go-proton-api"
@@ -18,8 +17,7 @@ import (
 var listStyle = lipgloss.NewStyle().
 	Margin(1, 2)
 
-var docStyle = lipgloss.NewStyle().
-	Background(lipgloss.Color("#0000ff"))
+var docStyle = lipgloss.NewStyle()
 
 type FilterList struct {
 	list    list.Model
@@ -52,11 +50,10 @@ func (v *FilterList) RenderFilter() string {
 		current = v.list.SelectedItem().(FilterItem)
 	}
 	buf := new(bytes.Buffer)
-	err := quick.Highlight(os.Stdout, current.Sieve, "sieve", "terminal256", "monokai")
+	err := quick.Highlight(buf, current.Sieve, "sieve", "terminal16m", "catppuccin-macchiato")
 	if err != nil {
 		return current.Sieve
 	}
-	// return buf.String()
 	return wrap.String(buf.String(), v.vp.Width)
 }
 
@@ -70,14 +67,8 @@ func (v *FilterList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds []tea.Cmd
 	)
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "j", "k", "up", "down":
-			v.vp.SetContent(v.RenderFilter())
-		}
 	case types.FiltersMsg:
 		cmd = v.SetFilters(msg)
-		v.vp.SetContent(v.RenderFilter())
 		cmds = append(cmds, cmd)
 	case tea.WindowSizeMsg:
 		x, y := listStyle.GetFrameSize()
@@ -93,11 +84,9 @@ func (v *FilterList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	v.list, cmd = v.list.Update(msg)
 	cmds = append(cmds, cmd)
+	v.vp.SetContent(v.RenderFilter())
 	v.vp, cmd = v.vp.Update(msg)
 	cmds = append(cmds, cmd)
-	// if v.list.SelectedItem() != nil {
-	// 	v.vp.SetContent(v.list.SelectedItem().(FilterItem).Sieve)
-	// }
 
 	return v, tea.Batch(cmds...)
 }
