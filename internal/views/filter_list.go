@@ -12,10 +12,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/maisieccino/proton-filters/internal/types"
-	"github.com/muesli/reflow/wordwrap"
+	"github.com/muesli/reflow/wrap"
 )
 
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
+var listStyle = lipgloss.NewStyle().
+	Margin(1, 2)
+
+var docStyle = lipgloss.NewStyle().
+	Background(lipgloss.Color("#0000ff"))
 
 type FilterList struct {
 	list    list.Model
@@ -38,7 +42,7 @@ func NewFilterList() (tea.Model, string) {
 func (v *FilterList) View() string {
 	return lipgloss.JoinHorizontal(lipgloss.Top,
 		v.list.View(),
-		v.vp.View(),
+		docStyle.Render(v.vp.View()),
 	)
 }
 
@@ -52,7 +56,8 @@ func (v *FilterList) RenderFilter() string {
 	if err != nil {
 		return current.Sieve
 	}
-	return wordwrap.String(buf.String(), v.vp.Width)
+	// return buf.String()
+	return wrap.String(buf.String(), v.vp.Width)
 }
 
 func (v *FilterList) Init() tea.Cmd {
@@ -60,23 +65,41 @@ func (v *FilterList) Init() tea.Cmd {
 }
 
 func (v *FilterList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd, vpCmd tea.Cmd
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
 	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "j", "k", "up", "down":
+			v.vp.SetContent(v.RenderFilter())
+		}
 	case types.FiltersMsg:
 		cmd = v.SetFilters(msg)
-		return v, cmd
+		v.vp.SetContent(v.RenderFilter())
+		cmds = append(cmds, cmd)
 	case tea.WindowSizeMsg:
-		x, y := docStyle.GetFrameSize()
-		v.list.SetSize((msg.Width-x)/2, msg.Height-y)
-		v.vp.Width = msg.Width / 2
-		v.vpReady = true
+		x, y := listStyle.GetFrameSize()
+		v.list.SetSize((msg.Width/2)-x, msg.Height-y)
+		v.list.SetWidth((msg.Width / 2) - x)
+		if !v.vpReady {
+			v.vp = viewport.New(msg.Width/2, msg.Height)
+			v.vpReady = true
+		} else {
+			v.vp.Width = msg.Width / 2
+			v.vp.Height = msg.Height
+		}
 	}
 	v.list, cmd = v.list.Update(msg)
-	v.vp, vpCmd = v.vp.Update(msg)
-	cmd = tea.Batch(cmd, vpCmd)
-	v.vp.SetContent(v.RenderFilter())
+	cmds = append(cmds, cmd)
+	v.vp, cmd = v.vp.Update(msg)
+	cmds = append(cmds, cmd)
+	// if v.list.SelectedItem() != nil {
+	// 	v.vp.SetContent(v.list.SelectedItem().(FilterItem).Sieve)
+	// }
 
-	return v, cmd
+	return v, tea.Batch(cmds...)
 }
 
 func (v *FilterList) SetFilters(filters []proton.Filter) tea.Cmd {

@@ -74,7 +74,8 @@ func (m appModel) View() string {
 func Root(cmd *cobra.Command, args []string) {
 	p := tea.NewProgram(
 		newApp(),
-		// tea.WithAltScreen(),
+		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
 	)
 	if _, err := p.Run(); err != nil {
 		fmt.Println(err)
