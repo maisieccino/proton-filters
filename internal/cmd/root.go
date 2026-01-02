@@ -30,7 +30,7 @@ func newApp() appModel {
 		client:  c,
 		screens: make(map[string]tea.Model),
 	}
-	v, name := views.NewFilterList()
+	v, name := views.NewFilterList(c)
 	m.screens[name] = v
 	m.current = name
 	return m
@@ -56,7 +56,6 @@ func (m appModel) Init() tea.Cmd {
 }
 
 func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
