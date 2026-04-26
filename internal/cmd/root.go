@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/ProtonMail/go-proton-api"
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/maisieccino/proton-filters/internal/client"
 	"github.com/maisieccino/proton-filters/internal/types"
 	"github.com/maisieccino/proton-filters/internal/views"
