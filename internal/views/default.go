@@ -14,6 +14,6 @@ func (v *DefaultScreen) Update(tea.Msg) (tea.Model, tea.Cmd) {
 	return nil, nil
 }
 
-func (v *DefaultScreen) View() string {
-	return "Hi"
+func (v *DefaultScreen) View() tea.View {
+	return tea.NewView("Hi")
 }

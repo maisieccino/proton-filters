@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ProtonMail/go-proton-api"
 	tea "charm.land/bubbletea/v2"
+	"github.com/ProtonMail/go-proton-api"
 	"github.com/maisieccino/proton-filters/internal/client"
 	"github.com/maisieccino/proton-filters/internal/types"
 	"github.com/maisieccino/proton-filters/internal/views"
@@ -66,15 +66,15 @@ func (m appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m.currentScreen().Update(msg)
 }
 
-func (m appModel) View() string {
-	return m.currentScreen().View()
+func (m appModel) View() tea.View {
+	view := m.currentScreen().View()
+	view.AltScreen = true
+	return view
 }
 
 func Root(cmd *cobra.Command, args []string) {
 	p := tea.NewProgram(
 		newApp(),
-		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
 	)
 	if _, err := p.Run(); err != nil {
 		fmt.Println(err)

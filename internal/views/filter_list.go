@@ -7,13 +7,13 @@ import (
 	"os"
 	"slices"
 
-	"github.com/ProtonMail/go-proton-api"
-	"github.com/alecthomas/chroma/v2/quick"
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/ProtonMail/go-proton-api"
+	"github.com/alecthomas/chroma/v2/quick"
 	"github.com/maisieccino/proton-filters/internal/filter"
 	"github.com/maisieccino/proton-filters/internal/types"
 	"github.com/muesli/reflow/wrap"
@@ -56,11 +56,13 @@ func NewFilterList(client *proton.Client) (tea.Model, string) {
 	}, "filter-list"
 }
 
-func (v *FilterList) View() string {
-	return lipgloss.JoinHorizontal(lipgloss.Top,
+func (v *FilterList) View() tea.View {
+	view := tea.NewView(lipgloss.JoinHorizontal(lipgloss.Top,
 		v.list.View(),
 		docStyle.Render(v.vp.View()),
-	)
+	))
+	view.WindowTitle = v.list.Title
+	return view
 }
 
 func (v *FilterList) RenderFilter() string {
@@ -73,7 +75,7 @@ func (v *FilterList) RenderFilter() string {
 	if err != nil {
 		return current.Sieve
 	}
-	return wrap.String(buf.String(), v.vp.Width)
+	return wrap.String(buf.String(), v.vp.Width())
 }
 
 func (v *FilterList) Init() tea.Cmd {
@@ -168,11 +170,14 @@ func (v *FilterList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		v.list.SetSize((msg.Width/2)-x, msg.Height-y)
 		v.list.SetWidth((msg.Width / 2) - x)
 		if !v.vpReady {
-			v.vp = viewport.New(msg.Width/2, msg.Height)
+			v.vp = viewport.New(
+				viewport.WithWidth(msg.Width/2),
+				viewport.WithWidth(msg.Height),
+			)
 			v.vpReady = true
 		} else {
-			v.vp.Width = msg.Width / 2
-			v.vp.Height = msg.Height
+			v.vp.SetWidth(msg.Width / 2)
+			v.vp.SetHeight(msg.Height)
 		}
 	}
 	v.list, cmd = v.list.Update(msg)
