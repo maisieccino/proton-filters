@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/maisieccino/proton-filters/internal/filter"
 	"github.com/maisieccino/proton-filters/internal/types"
 	"github.com/muesli/reflow/wrap"
 )
@@ -28,6 +29,7 @@ type FilterList struct {
 	client  *proton.Client
 	vp      viewport.Model
 	vpReady bool
+	editing bool
 }
 
 var _ list.Item = &FilterItem{}
@@ -41,6 +43,10 @@ func NewFilterList(client *proton.Client) (tea.Model, string) {
 			key.NewBinding(
 				key.WithKeys("a"),
 				key.WithHelp("a", "toggle filter"),
+			),
+			key.NewBinding(
+				key.WithKeys("e"),
+				key.WithHelp("e", "edit filter"),
 			),
 		}
 	}
@@ -100,6 +106,9 @@ func (v *FilterList) ToggleFilter(filter proton.Filter) tea.Cmd {
 }
 
 func (v *FilterList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if v.editing {
+		return v, nil
+	}
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
@@ -109,9 +118,16 @@ func (v *FilterList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = v.list.NewStatusMessage(fmt.Sprintf("Error: %s", msg.Error()))
 		cmds = append(cmds, cmd)
 	case tea.KeyMsg:
-		if msg.String() == "a" {
+		switch msg.String() {
+		case "a":
 			if f, ok := v.CurrentFilter(); ok {
 				cmds = append(cmds, v.ToggleFilter(f.Filter))
+			}
+		case "e":
+			if f, ok := v.CurrentFilter(); ok {
+				editCmd := editFilter(f)
+				v.editing = true
+				cmds = append(cmds, editCmd)
 			}
 		}
 	case types.ToggleMsg:
@@ -137,6 +153,16 @@ func (v *FilterList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case types.FiltersMsg:
 		cmd = v.SetFilters(msg)
 		cmds = append(cmds, cmd)
+	case types.FilterMsg:
+		v.editing = false
+		// Find idx of filter.
+		i := slices.IndexFunc(v.list.Items(), func(i list.Item) bool {
+			if f, ok := i.(FilterItem); ok {
+				return f.ID == msg.ID
+			}
+			return false
+		})
+		cmds = append(cmds, v.list.SetItem(i, FilterItem{proton.Filter(msg)}))
 	case tea.WindowSizeMsg:
 		x, y := listStyle.GetFrameSize()
 		v.list.SetSize((msg.Width/2)-x, msg.Height-y)
@@ -189,4 +215,15 @@ func (i FilterItem) Description() string {
 
 func (i FilterItem) FilterValue() string {
 	return i.Name
+}
+
+func editFilter(f FilterItem) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
+		newFilter, err := filter.EditFilter(ctx, f.Filter)
+		if err != nil {
+			return nil
+		}
+		return types.FilterMsg(newFilter)
+	}
 }
