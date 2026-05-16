@@ -19,10 +19,13 @@ import (
 	"github.com/muesli/reflow/wrap"
 )
 
-var listStyle = lipgloss.NewStyle().
-	Margin(1, 2)
-
-var docStyle = lipgloss.NewStyle()
+var (
+	listStyle = lipgloss.NewStyle().
+			Margin(1, 2)
+	docStyle   = lipgloss.NewStyle()
+	styleRed   = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(1))
+	styleGreen = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(10))
+)
 
 type FilterList struct {
 	list    list.Model
@@ -62,6 +65,7 @@ func (v *FilterList) View() tea.View {
 		docStyle.Render(v.vp.View()),
 	))
 	view.WindowTitle = v.list.Title
+	view.AltScreen = true
 	return view
 }
 
@@ -209,12 +213,12 @@ func (i FilterItem) Title() string {
 }
 
 func (i FilterItem) Description() string {
+	dot := "• "
 	switch i.Status {
 	case 1:
-		return "Enabled"
+		return styleGreen.Render(dot) + "Enabled"
 	default:
-		return "Disabled"
-
+		return styleRed.Render(dot) + "Disabled"
 	}
 }
 
