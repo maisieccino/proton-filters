@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"slices"
 
 	"charm.land/bubbles/v2/key"
@@ -32,7 +31,6 @@ type FilterList struct {
 	client  *proton.Client
 	vp      viewport.Model
 	vpReady bool
-	editing bool
 }
 
 var _ list.Item = &FilterItem{}
@@ -44,8 +42,8 @@ func NewFilterList(client *proton.Client) (tea.Model, string) {
 	l.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			key.NewBinding(
-				key.WithKeys("a"),
-				key.WithHelp("a", "toggle filter"),
+				key.WithKeys("x"),
+				key.WithHelp("x", "toggle filter"),
 			),
 			key.NewBinding(
 				key.WithKeys("e"),
@@ -97,7 +95,6 @@ func (v *FilterList) ToggleFilter(filter proton.Filter) tea.Cmd {
 	return func() tea.Msg {
 		// TODO: Cancellable context.
 		ctx := context.Background()
-		fmt.Fprintf(os.Stderr, "Status: %d\n", filter.Status)
 		if filter.Status == 1 {
 			if err := v.client.DisableFilter(ctx, filter.ID); err != nil {
 				return err
@@ -112,9 +109,6 @@ func (v *FilterList) ToggleFilter(filter proton.Filter) tea.Cmd {
 }
 
 func (v *FilterList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if v.editing {
-		return v, nil
-	}
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
@@ -125,14 +119,13 @@ func (v *FilterList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "a":
+		case "x":
 			if f, ok := v.CurrentFilter(); ok {
 				cmds = append(cmds, v.ToggleFilter(f.Filter))
 			}
 		case "e":
 			if f, ok := v.CurrentFilter(); ok {
-				editCmd := editFilter(f)
-				v.editing = true
+				editCmd := filter.EditFilter(f.Filter)
 				cmds = append(cmds, editCmd)
 			}
 		}
@@ -160,7 +153,6 @@ func (v *FilterList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = v.SetFilters(msg)
 		cmds = append(cmds, cmd)
 	case types.FilterMsg:
-		v.editing = false
 		// Find idx of filter.
 		i := slices.IndexFunc(v.list.Items(), func(i list.Item) bool {
 			if f, ok := i.(FilterItem); ok {
@@ -224,15 +216,4 @@ func (i FilterItem) Description() string {
 
 func (i FilterItem) FilterValue() string {
 	return i.Name
-}
-
-func editFilter(f FilterItem) tea.Cmd {
-	return func() tea.Msg {
-		ctx := context.Background()
-		newFilter, err := filter.EditFilter(ctx, f.Filter)
-		if err != nil {
-			return nil
-		}
-		return types.FilterMsg(newFilter)
-	}
 }
